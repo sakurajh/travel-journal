@@ -26,6 +26,11 @@ class StorageManager {
             this.user = session?.user || null;
         });
 
+        // 确保用户资料存在
+        if (this.user) {
+            await this.ensureProfile();
+        }
+
         return this;
     }
 
@@ -51,6 +56,41 @@ class StorageManager {
             return false;
         }
         return true;
+    }
+
+    // 确保用户资料存在
+    async ensureProfile() {
+        if (!this.client || !this.user) return false;
+
+        try {
+            // 检查 profile 是否存在
+            const { data, error } = await this.client
+                .from('profiles')
+                .select('id')
+                .eq('id', this.user.id)
+                .single();
+
+            if (data) return true;
+
+            // 不存在则创建
+            const { error: insertError } = await this.client
+                .from('profiles')
+                .insert({
+                    id: this.user.id,
+                    email: this.user.email,
+                    display_name: this.user.user_metadata?.display_name || this.user.email?.split('@')[0] || '用户'
+                });
+
+            if (insertError) {
+                console.error('创建用户资料失败:', insertError);
+                return false;
+            }
+
+            return true;
+        } catch (e) {
+            console.error('ensureProfile error:', e);
+            return false;
+        }
     }
 
     // ===== 照片存储 (Supabase Storage) =====
@@ -159,6 +199,9 @@ class StorageManager {
             throw new Error('请先登录');
         }
 
+        // 确保用户资料存在
+        await this.ensureProfile();
+
         const tripData = {
             id: trip.id,
             user_id: this.user.id,
@@ -257,6 +300,9 @@ class StorageManager {
     async saveSettings(settings) {
         if (!this.client || !this.user) return;
 
+        // 确保用户资料存在
+        await this.ensureProfile();
+
         const { error } = await this.client
             .from('user_settings')
             .upsert({
@@ -294,6 +340,9 @@ class StorageManager {
 
     async setCurrentTripId(id) {
         if (!this.client || !this.user) return;
+
+        // 确保用户资料存在
+        await this.ensureProfile();
 
         await this.client
             .from('user_settings')
