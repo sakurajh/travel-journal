@@ -8,36 +8,43 @@ class TravelApp {
     }
 
     async init() {
-        // 初始化存储
-        await storageManager.init();
+        try {
+            // 初始化存储
+            await storageManager.init();
 
-        // 获取当前旅行
-        const trips = await storageManager.getAllTrips();
+            // 获取当前旅行
+            const trips = await storageManager.getAllTrips();
 
-        if (trips.length === 0) {
+            if (trips.length === 0) {
+                this.hideLoader();
+                this.showEmptyState();
+                return;
+            }
+
+            const currentTripId = await storageManager.getCurrentTripId();
+            this.currentTrip = trips.find(t => t.id === currentTripId) || trips[0];
+
+            // 显示加载动画
+            this.showLoader();
+
+            await this.render();
+
+            // 隐藏加载动画
+            setTimeout(() => this.hideLoader(), 800);
+
+            this.setupEventListeners();
+            this.initCursor();
+            this.initParticles();
+            this.initTiltEffect();
+            this.initRippleEffect();
+            this.initMagneticButtons();
+            this.animateTitle();
+            this.initToolbar();
+        } catch (err) {
+            console.error('init error:', err);
+            this.hideLoader();
             this.showEmptyState();
-            return;
         }
-
-        const currentTripId = await storageManager.getCurrentTripId();
-        this.currentTrip = trips.find(t => t.id === currentTripId) || trips[0];
-
-        // 显示加载动画
-        this.showLoader();
-
-        await this.render();
-
-        // 隐藏加载动画
-        setTimeout(() => this.hideLoader(), 800);
-
-        this.setupEventListeners();
-        this.initCursor();
-        this.initParticles();
-        this.initTiltEffect();
-        this.initRippleEffect();
-        this.initMagneticButtons();
-        this.animateTitle();
-        this.initToolbar();
     }
 
     // ===== 加载动画 =====
@@ -927,5 +934,27 @@ class TravelApp {
 
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
-    new TravelApp().init();
+    const app = new TravelApp();
+
+    // 最大加载时间保护 - 5秒后强制隐藏加载动画
+    const loaderTimeout = setTimeout(() => {
+        const loader = document.getElementById('pageLoader');
+        if (loader) {
+            loader.classList.add('hidden');
+            setTimeout(() => loader.remove(), 500);
+        }
+    }, 5000);
+
+    app.init().catch(err => {
+        console.error('初始化失败:', err);
+        clearTimeout(loaderTimeout);
+        const loader = document.getElementById('pageLoader');
+        if (loader) {
+            loader.classList.add('hidden');
+            setTimeout(() => loader.remove(), 500);
+        }
+        app.showEmptyState();
+    }).finally(() => {
+        clearTimeout(loaderTimeout);
+    });
 });
