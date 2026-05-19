@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理 - 旅行摄影日志</title>
+    <link rel="stylesheet" href="admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>旅行日志管理</h2>
+                <p class="sidebar-subtitle">Travel Journal Admin</p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#trips" class="nav-item active" data-section="trips">
+                    <span class="nav-icon">🗺️</span>
+                    <span>旅行管理</span>
+                </a>
+                <a href="#photos" class="nav-item" data-section="photos">
+                    <span class="nav-icon">📷</span>
+                    <span>照片管理</span>
+                </a>
+                <a href="#settings" class="nav-item" data-section="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>页面设置</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="index.html" class="view-site-btn" target="_blank">
+                    查看网站 →
+                </a>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 顶部栏 -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <h1 id="pageTitle">旅行管理</h1>
+                </div>
+                <div class="top-bar-right">
+                    <button class="btn btn-primary" id="addNewBtn">
+                        + 新建旅行
+                    </button>
+                </div>
+            </header>
+
+            <!-- 旅行管理 -->
+            <section class="content-section active" id="section-trips">
+                <div class="trips-grid" id="tripsGrid">
+                    <!-- 旅行卡片将在这里动态生成 -->
+                </div>
+                <div class="empty-state" id="emptyTrips">
+                    <div class="empty-icon">🗺️</div>
+                    <h3>还没有旅行记录</h3>
+                    <p>点击"新建旅行"开始创建你的摄影日志</p>
+                    <button class="btn btn-primary" onclick="createNewTrip()">+ 新建旅行</button>
+                </div>
+            </section>
+
+            <!-- 照片管理 -->
+            <section class="content-section" id="section-photos">
+                <div class="photos-header">
+                    <div class="trip-selector">
+                        <label>选择旅行：</label>
+                        <select id="photoTripSelect">
+                            <option value="">请选择旅行</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="uploadPhotosBtn" disabled>
+                        + 添加照片
+                    </button>
+                </div>
+                <div class="photos-grid" id="photosGrid">
+                    <!-- 照片将在这里动态生成 -->
+                </div>
+                <div class="empty-state" id="emptyPhotos">
+                    <div class="empty-icon">📷</div>
+                    <h3>还没有照片</h3>
+                    <p>选择一个旅行，然后添加照片</p>
+                </div>
+            </section>
+
+            <!-- 页面设置 -->
+            <section class="content-section" id="section-settings">
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>网站标题</label>
+                        <input type="text" id="siteTitle" placeholder="我的旅行摄影日志">
+                    </div>
+                    <div class="form-group">
+                        <label>副标题</label>
+                        <input type="text" id="siteSubtitle" placeholder="用镜头记录世界的美好">
+                    </div>
+                    <div class="form-group">
+                        <label>底部信息</label>
+                        <input type="text" id="footerInfo" placeholder="工作室名称">
+                    </div>
+                    <div class="form-group">
+                        <label>主题颜色</label>
+                        <div class="color-options">
+                            <label class="color-option">
+                                <input type="radio" name="theme" value="coral" checked>
+                                <span class="color-preview" style="background: #E85D4A"></span>
+                                <span>珊瑚红</span>
+                            </label>
+                            <label class="color-option">
+                                <input type="radio" name="theme" value="orange">
+                                <span class="color-preview" style="background: #E86435"></span>
+                                <span>暖橙色</span>
+                            </label>
+                            <label class="color-option">
+                                <input type="radio" name="theme" value="blue">
+                                <span class="color-preview" style="background: #4169E1"></span>
+                                <span>深蓝色</span>
+                            </label>
+                            <label class="color-option">
+                                <input type="radio" name="theme" value="green">
+                                <span class="color-preview" style="background: #2E8B57"></span>
+                                <span>森林绿</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>胶卷型号</label>
+                        <input type="text" id="filmStock" placeholder="KODAK PORTRA 400">
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+                        <button class="btn btn-secondary" onclick="resetSettings()">重置默认</button>
+                    </div>
+
+                    <div class="storage-management">
+                        <h3>存储管理</h3>
+
+                        <div class="storage-stats">
+                            <div class="stat-card">
+                                <div class="stat-value" id="statTrips">0</div>
+                                <div class="stat-label">旅行</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="statPhotos">0</div>
+                                <div class="stat-label">照片</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="statStorage">0 KB</div>
+                                <div class="stat-label">数据库</div>
+                            </div>
+                        </div>
+
+                        <div class="file-system-section">
+                            <h4>文件系统</h4>
+                            <div id="fileSystemStatus">检测中...</div>
+                            <p class="help-text">连接文件系统后，照片将直接保存到本地文件夹，无大小限制。</p>
+                        </div>
+
+                        <div class="data-actions">
+                            <h4>数据管理</h4>
+                            <div class="action-buttons">
+                                <button class="btn btn-secondary" onclick="exportData()">📥 导出数据</button>
+                                <button class="btn btn-secondary" onclick="importData()">📤 导入数据</button>
+                                <button class="btn btn-danger" onclick="clearAllData()">🗑️ 清空数据</button>
+                            </div>
+                            <input type="file" id="importFile" accept=".json" onchange="handleImport(event)" hidden>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 新建/编辑旅行弹窗 -->
+    <div class="modal" id="tripModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tripModalTitle">新建旅行</h3>
+                <button class="modal-close" onclick="closeTripModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>旅行名称</label>
+                    <input type="text" id="tripName" placeholder="例如：巴厘岛之旅">
+                </div>
+                <div class="form-group">
+                    <label>年份</label>
+                    <input type="text" id="tripYear" placeholder="2026">
+                </div>
+                <div class="form-group">
+                    <label>副标题</label>
+                    <input type="text" id="tripSubtitle" placeholder="A PHOTOGRAPHIC JOURNAL">
+                </div>
+                <div class="form-group">
+                    <label>描述</label>
+                    <textarea id="tripDescription" placeholder="关于这次旅行的简短描述..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>目的地列表</label>
+                    <div class="destinations-list" id="destinationsList">
+                        <!-- 目的地将在这里动态生成 -->
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="addDestination()">
+                        + 添加目的地
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTripModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTrip()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 上传照片弹窗 -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>添加照片</h3>
+                <button class="modal-close" onclick="closeUploadModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-storage-status" id="uploadStorageStatus">
+                    检测存储...
+                </div>
+                <div class="upload-section">
+                    <div class="destination-select">
+                        <label>选择目的地：</label>
+                        <select id="uploadDestination">
+                            <option value="">请选择目的地</option>
+                        </select>
+                    </div>
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📁</div>
+                        <p>拖拽照片到这里</p>
+                        <p class="upload-hint">或者点击选择文件（支持多选）</p>
+                        <input type="file" id="fileInput" multiple accept="image/*" hidden>
+                    </div>
+                </div>
+                <div class="upload-preview" id="uploadPreview">
+                    <!-- 预览将在这里显示 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeUploadModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmUpload()">确认上传</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="storage.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

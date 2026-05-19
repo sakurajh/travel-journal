@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "name": "travel-journal",
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "framework": null,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}

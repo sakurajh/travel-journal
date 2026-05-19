@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行摄影日志</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 自定义光标 -->
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-follower" id="cursorFollower"></div>
+
+    <!-- 页面加载动画 -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-content">
+            <div class="loader-text">LOADING</div>
+            <div class="loader-bar">
+                <div class="loader-progress" id="loaderProgress"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 左侧：封面与信息区 -->
+        <aside class="left-panel">
+            <div class="left-content">
+                <header class="hero-header">
+                    <div class="main-title">
+                        <span class="title-bali" id="titleMain">TRAVEL</span>
+                        <span class="title-year" id="titleYear">2026</span>
+                    </div>
+                    <p class="subtitle-cn" id="subtitleCn">用镜头记录世界的美好</p>
+                    <p class="subtitle-en" id="subtitleEn">A PHOTOGRAPHIC JOURNAL</p>
+                    <p class="subtitle-desc" id="subtitleDesc">—</p>
+                </header>
+
+                <nav class="itinerary">
+                    <div class="itinerary-header">
+                        <span class="film-icon">◈</span>
+                        <span>行程清单</span>
+                    </div>
+                    <ul class="itinerary-list" id="itineraryList">
+                        <!-- 行程列表将在这里动态生成 -->
+                    </ul>
+                </nav>
+
+                <footer class="left-footer">
+                    <button class="enter-btn" id="enterBtn">开始浏览 →</button>
+                    <div class="footer-info">
+                        <span id="footerInfo">TRAVEL JOURNAL</span>
+                    </div>
+                </footer>
+            </div>
+        </aside>
+
+        <!-- 右侧：照片画廊 -->
+        <main class="right-panel">
+            <div class="gallery-header">
+                <span class="roll-info" id="rollInfo">TRAVEL-JOURNAL</span>
+                <span class="roll-divider">·</span>
+                <span class="film-stock" id="filmStock">KODAK PORTRA 400</span>
+                <span class="roll-divider">·</span>
+                <span class="frame-count" id="frameCount">01 OF 36</span>
+            </div>
+
+            <div class="gallery-scroll" id="galleryScroll">
+                <div class="gallery-track" id="galleryTrack">
+                    <!-- 照片卡片将在这里动态生成 -->
+                </div>
+            </div>
+
+            <div class="gallery-footer">
+                <div class="hover-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">正在浏览 · <span id="hoverLocation">--</span></span>
+                </div>
+                <div class="scroll-indicator">
+                    <span class="scroll-indicator-text">SCROLL</span>
+                    <span class="scroll-indicator-arrow"></span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 灯箱 -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightboxClose">×</button>
+        <div class="lightbox-content">
+            <div class="lightbox-image" id="lightboxImage"></div>
+            <div class="lightbox-info">
+                <span class="lightbox-index" id="lightboxIndex">01</span>
+                <span class="lightbox-location" id="lightboxLocation">--</span>
+                <span class="lightbox-date" id="lightboxDate">--</span>
+            </div>
+        </div>
+        <button class="lightbox-prev" id="lightboxPrev">‹</button>
+        <button class="lightbox-next" id="lightboxNext">›</button>
+    </div>
+
+    <!-- 全屏轮播 -->
+    <div class="fullscreen-slider" id="fullscreenSlider">
+        <div class="slider-background" id="sliderBackground"></div>
+        <div class="slider-content">
+            <div class="slider-counter">
+                <span id="sliderCurrent">01</span>
+                <span class="slider-divider">/</span>
+                <span id="sliderTotal">07</span>
+            </div>
+            <div class="slider-image-wrapper">
+                <img class="slider-image" id="sliderImage" src="" alt="">
+            </div>
+            <div class="slider-info">
+                <div class="slider-index" id="sliderIndex">01</div>
+                <div class="slider-location" id="sliderLocation">BROMO</div>
+                <div class="slider-date" id="sliderDate">04.26 · JAVA</div>
+            </div>
+            <div class="slider-progress">
+                <div class="slider-progress-bar" id="sliderProgress"></div>
+            </div>
+        </div>
+        <button class="slider-close" id="sliderClose">×</button>
+        <button class="slider-prev" id="sliderPrev">‹</button>
+        <button class="slider-next" id="sliderNext">›</button>
+        <div class="slider-thumbnails" id="sliderThumbnails">
+            <!-- 缩略图 -->
+        </div>
+    </div>
+
+    <!-- 旅行选择器 -->
+    <div class="trip-selector-panel" id="tripSelectorPanel">
+        <div class="trip-selector-header">
+            <h3>选择旅行</h3>
+            <button class="trip-selector-close" id="tripSelectorClose">×</button>
+        </div>
+        <div class="trip-selector-list" id="tripSelectorList">
+            <!-- 旅行列表将在这里动态生成 -->
+        </div>
+        <div class="trip-selector-footer">
+            <a href="admin.html" class="admin-link">管理后台</a>
+        </div>
+    </div>
+
+    <!-- 切换按钮 -->
+    <button class="trip-switch-btn" id="tripSwitchBtn" title="切换旅行">
+        🗺️
+    </button>
+
+    <!-- 工具栏 -->
+    <div class="toolbar" id="toolbar">
+        <button class="toolbar-btn" id="btnKeyboardHelp" title="快捷键帮助">
+            ⌨️
+        </button>
+        <button class="toolbar-btn" id="btnFullscreen" title="全屏">
+            ⛶
+        </button>
+        <button class="toolbar-btn" id="btnShare" title="分享">
+            📤
+        </button>
+        <button class="toolbar-btn" id="btnStats" title="统计">
+            📊
+        </button>
+    </div>
+
+    <!-- 快捷键帮助弹窗 -->
+    <div class="modal-overlay" id="keyboardModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>快捷键</h3>
+                <button class="modal-close" onclick="document.getElementById('keyboardModal').classList.remove('active')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcut-list">
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">← →</span>
+                        <span class="shortcut-desc">切换照片</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">↑ ↓</span>
+                        <span class="shortcut-desc">切换目的地</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Enter</span>
+                        <span class="shortcut-desc">打开轮播</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Esc</span>
+                        <span class="shortcut-desc">关闭弹窗</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">空格</span>
+                        <span class="shortcut-desc">暂停/继续轮播</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">F</span>
+                        <span class="shortcut-desc">全屏切换</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计信息弹窗 -->
+    <div class="modal-overlay" id="statsModal">
+        <div class="modal-box modal-wide">
+            <div class="modal-header">
+                <h3>旅行统计</h3>
+                <button class="modal-close" onclick="document.getElementById('statsModal').classList.remove('active')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="stats-grid" id="statsGrid">
+                    <!-- 统计数据 -->
+                </div>
+                <div class="stats-destinations" id="statsDestinations">
+                    <!-- 目的地列表 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分享弹窗 -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>分享旅行</h3>
+                <button class="modal-close" onclick="document.getElementById('shareModal').classList.remove('active')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="share-options">
+                    <button class="share-btn" onclick="app.copyShareLink()">
+                        🔗 复制链接
+                    </button>
+                    <button class="share-btn" onclick="app.downloadScreenshot()">
+                        📸 保存截图
+                    </button>
+                </div>
+                <div class="share-link-box">
+                    <input type="text" id="shareLink" readonly value="">
+                    <button onclick="app.copyShareLink()">复制</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 照片详情弹窗 -->
+    <div class="modal-overlay" id="photoDetailModal">
+        <div class="modal-box modal-wide">
+            <div class="modal-header">
+                <h3>照片详情</h3>
+                <button class="modal-close" onclick="document.getElementById('photoDetailModal').classList.remove('active')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="photo-detail-content">
+                    <div class="photo-detail-image" id="photoDetailImage"></div>
+                    <div class="photo-detail-info" id="photoDetailInfo"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="storage.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
