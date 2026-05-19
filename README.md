@@ -52,9 +52,11 @@
 ├── app.js          # 前台逻辑
 ├── admin.js        # 后台逻辑
 ├── storage.js      # 存储管理
+├── vercel.json     # Vercel 配置
 ├── deploy.bat      # 部署脚本（Windows）
 ├── deploy.sh       # 部署脚本（Mac/Linux）
-├── DEPLOY.md       # 部署说明
+├── VERCEL.md       # Vercel 部署教程
+├── DEPLOY.md       # GitHub Pages 教程
 └── README.md       # 说明文档
 ```
 
