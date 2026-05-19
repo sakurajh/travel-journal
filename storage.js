@@ -1,330 +1,321 @@
-// ===== 存储管理器 =====
-// 使用 File System Access API + IndexedDB 混合方案
-// 元数据存 IndexedDB，照片存本地文件系统
+// ===== 存储管理器 (Supabase 版) =====
+// 使用 Supabase 作为后端：Auth + Database + Storage
 
 class StorageManager {
     constructor() {
-        this.dbName = 'TravelJournalDB';
-        this.dbVersion = 1;
-        this.db = null;
-        this.dirHandle = null; // 文件系统目录句柄
-        this.photosDir = 'photos'; // 照片子目录名
+        this.client = null;
+        this.user = null;
     }
 
     // ===== 初始化 =====
     async init() {
-        await this.initDB();
-        await this.loadDirHandle();
+        // 等待 Supabase 客户端就绪
+        this.client = window.supabaseClient || (window.initSupabase && window.initSupabase());
+
+        if (!this.client) {
+            console.warn('Supabase 未配置，使用本地模式');
+            return this;
+        }
+
+        // 检查登录状态
+        const { data: { session } } = await this.client.auth.getSession();
+        this.user = session?.user || null;
+
+        // 监听登录状态变化
+        this.client.auth.onAuthStateChange((event, session) => {
+            this.user = session?.user || null;
+        });
+
         return this;
     }
 
-    // ===== IndexedDB 初始化 =====
-    initDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.dbVersion);
-
-            request.onerror = () => reject(request.error);
-
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-
-                // 旅行存储
-                if (!db.objectStoreNames.contains('trips')) {
-                    const tripStore = db.createObjectStore('trips', { keyPath: 'id' });
-                    tripStore.createIndex('name', 'name', { unique: false });
-                }
-
-                // 设置存储
-                if (!db.objectStoreNames.contains('settings')) {
-                    db.createObjectStore('settings', { keyPath: 'key' });
-                }
-
-                // 文件句柄存储
-                if (!db.objectStoreNames.contains('handles')) {
-                    db.createObjectStore('handles', { keyPath: 'key' });
-                }
-            };
-
-            request.onsuccess = (event) => {
-                this.db = event.target.result;
-                resolve();
-            };
-        });
+    // ===== 认证方法 =====
+    isLoggedIn() {
+        return this.user !== null;
     }
 
-    // ===== 文件系统访问 =====
-    async loadDirHandle() {
-        try {
-            const handle = await this.getFromDB('handles', 'photosDir');
-            if (handle) {
-                // 验证权限
-                if (await this.verifyPermission(handle)) {
-                    this.dirHandle = handle;
-                    return true;
-                }
-            }
-        } catch (e) {
-            console.log('需要重新授权文件夹');
-        }
-        return false;
+    getCurrentUser() {
+        return this.user;
     }
 
-    async selectPhotosFolder() {
-        try {
-            this.dirHandle = await window.showDirectoryPicker({
-                mode: 'readwrite',
-                startIn: 'pictures'
-            });
+    async signOut() {
+        if (!this.client) return;
+        await this.client.auth.signOut();
+        this.user = null;
+        window.location.href = 'login.html';
+    }
 
-            // 保存句柄
-            await this.saveToDB('handles', { key: 'photosDir', handle: this.dirHandle });
-
-            // 创建照片子目录
-            await this.dirHandle.getDirectoryHandle(this.photosDir, { create: true });
-
-            return true;
-        } catch (e) {
-            console.error('选择文件夹失败:', e);
+    requireAuth() {
+        if (!this.isLoggedIn()) {
+            window.location.href = 'login.html';
             return false;
         }
+        return true;
     }
 
-    async verifyPermission(handle) {
-        const options = { mode: 'readwrite' };
-        if ((await handle.queryPermission(options)) === 'granted') {
-            return true;
-        }
-        if ((await handle.requestPermission(options)) === 'granted') {
-            return true;
-        }
-        return false;
-    }
-
-    hasFileSystemAccess() {
-        return 'showDirectoryPicker' in window;
-    }
-
-    hasDirHandle() {
-        return this.dirHandle !== null;
-    }
-
-    // ===== 照片存储 =====
+    // ===== 照片存储 (Supabase Storage) =====
     async savePhoto(tripId, destIndex, file) {
-        if (!this.dirHandle) {
-            throw new Error('请先选择照片保存文件夹');
+        if (!this.client || !this.user) {
+            throw new Error('请先登录');
         }
 
-        // 创建目录结构: photos/tripId/destIndex/
-        const photosDir = await this.dirHandle.getDirectoryHandle(this.photosDir, { create: true });
-        const tripDir = await photosDir.getDirectoryHandle(tripId, { create: true });
-        const destDir = await tripDir.getDirectoryHandle(String(destIndex), { create: true });
+        // 压缩图片
+        const compressed = await this.compressImage(file);
 
-        // 生成文件名
+        // 生成路径: userId/tripId/destIndex/timestamp_random.ext
         const ext = file.name.split('.').pop() || 'jpg';
         const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
+        const filePath = `${this.user.id}/${tripId}/${destIndex}/${fileName}`;
 
-        // 写入文件
-        const fileHandle = await destDir.getFileHandle(fileName, { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write(file);
-        await writable.close();
+        // 上传到 Supabase Storage
+        const { data, error } = await this.client.storage
+            .from('photos')
+            .upload(filePath, compressed, {
+                contentType: file.type || 'image/jpeg',
+                upsert: false
+            });
 
-        // 返回相对路径
+        if (error) {
+            console.error('上传失败:', error);
+            throw new Error('照片上传失败: ' + error.message);
+        }
+
         return {
             id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            path: `${tripId}/${destIndex}/${fileName}`,
+            path: filePath,
             name: file.name,
-            size: file.size,
+            size: compressed.size,
             addedAt: new Date().toISOString()
         };
     }
 
     async getPhotoUrl(photoPath) {
-        if (!this.dirHandle) return null;
+        if (!this.client || !photoPath) return null;
 
         try {
-            const parts = photoPath.split('/');
-            let currentDir = await this.dirHandle.getDirectoryHandle(this.photosDir);
+            const { data } = this.client.storage
+                .from('photos')
+                .getPublicUrl(photoPath);
 
-            for (let i = 0; i < parts.length - 1; i++) {
-                currentDir = await currentDir.getDirectoryHandle(parts[i]);
-            }
-
-            const fileHandle = await currentDir.getFileHandle(parts[parts.length - 1]);
-            const file = await fileHandle.getFile();
-            return URL.createObjectURL(file);
-        } catch (e) {
-            console.error('读取照片失败:', e);
+            return data?.publicUrl || null;
+        } catch (err) {
+            console.error('获取照片URL失败:', err);
             return null;
         }
     }
 
     async deletePhoto(photoPath) {
-        if (!this.dirHandle) return false;
+        if (!this.client || !photoPath) return false;
 
         try {
-            const parts = photoPath.split('/');
-            let currentDir = await this.dirHandle.getDirectoryHandle(this.photosDir);
+            const { error } = await this.client.storage
+                .from('photos')
+                .remove([photoPath]);
 
-            for (let i = 0; i < parts.length - 1; i++) {
-                currentDir = await currentDir.getDirectoryHandle(parts[i]);
-            }
-
-            await currentDir.removeEntry(parts[parts.length - 1]);
-            return true;
-        } catch (e) {
-            console.error('删除照片失败:', e);
+            return !error;
+        } catch (err) {
+            console.error('删除照片失败:', err);
             return false;
         }
     }
 
-    // ===== 元数据存储 (IndexedDB) =====
+    // ===== 图片压缩 =====
+    async compressImage(file, maxWidth = 1200, quality = 0.7) {
+        // 小于 500KB 不压缩
+        if (file.size < 500 * 1024) return file;
+
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width;
+                    let h = img.height;
+
+                    if (w > maxWidth) {
+                        h = (maxWidth / w) * h;
+                        w = maxWidth;
+                    }
+
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    canvas.toBlob((blob) => {
+                        resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                    }, 'image/jpeg', quality);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ===== 旅行数据 (Supabase Database) =====
     async saveTrip(trip) {
-        return this.saveToDB('trips', trip);
+        if (!this.client || !this.user) {
+            throw new Error('请先登录');
+        }
+
+        const tripData = {
+            id: trip.id,
+            user_id: this.user.id,
+            name: trip.name,
+            year: trip.year,
+            subtitle: trip.subtitle || '',
+            description: trip.description || '',
+            destinations: trip.destinations || [],
+            photos: trip.photos || {},
+            created_at: trip.createdAt || new Date().toISOString()
+        };
+
+        const { error } = await this.client
+            .from('trips')
+            .upsert(tripData);
+
+        if (error) {
+            console.error('保存旅行失败:', error);
+            throw new Error('保存失败: ' + error.message);
+        }
+
+        return trip;
     }
 
     async getTrip(id) {
-        return this.getFromDB('trips', id);
+        if (!this.client) return null;
+
+        const { data, error } = await this.client
+            .from('trips')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error || !data) return null;
+
+        return this.formatTrip(data);
     }
 
     async getAllTrips() {
-        return this.getAllFromDB('trips');
+        if (!this.client) return [];
+
+        const { data, error } = await this.client
+            .from('trips')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error || !data) return [];
+
+        return data.map(d => this.formatTrip(d));
     }
 
     async deleteTrip(id) {
-        // 删除照片文件夹
-        if (this.dirHandle) {
-            try {
-                const photosDir = await this.dirHandle.getDirectoryHandle(this.photosDir);
-                await photosDir.removeEntry(id, { recursive: true });
-            } catch (e) {
-                console.log('照片文件夹不存在或删除失败');
+        if (!this.client) return;
+
+        // 删除该旅行的所有照片
+        try {
+            const trip = await this.getTrip(id);
+            if (trip && trip.photos) {
+                for (const photos of Object.values(trip.photos)) {
+                    for (const photo of photos) {
+                        if (photo.path) {
+                            await this.deletePhoto(photo.path);
+                        }
+                    }
+                }
             }
+        } catch (e) {
+            console.log('清理照片时出错:', e);
         }
 
-        // 删除元数据
-        return this.deleteFromDB('trips', id);
+        // 删除旅行记录
+        const { error } = await this.client
+            .from('trips')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('删除旅行失败:', error);
+        }
     }
 
-    async saveSettings(settings) {
-        return this.saveToDB('settings', { key: 'main', ...settings });
-    }
-
-    async getSettings() {
-        const settings = await this.getFromDB('settings', 'main');
-        return settings || {
-            siteTitle: '旅行摄影日志',
-            siteSubtitle: '用镜头记录世界的美好',
-            footerInfo: 'TRAVEL JOURNAL',
-            theme: 'coral',
-            filmStock: 'KODAK PORTRA 400'
+    formatTrip(data) {
+        return {
+            id: data.id,
+            name: data.name,
+            year: data.year,
+            subtitle: data.subtitle,
+            description: data.description,
+            destinations: data.destinations || [],
+            photos: data.photos || {},
+            createdAt: data.created_at
         };
     }
 
-    async setCurrentTripId(id) {
-        return this.saveToDB('settings', { key: 'currentTripId', value: id });
-    }
+    // ===== 设置 (Supabase Database) =====
+    async saveSettings(settings) {
+        if (!this.client || !this.user) return;
 
-    async getCurrentTripId() {
-        const data = await this.getFromDB('settings', 'currentTripId');
-        return data ? data.value : null;
-    }
+        const { error } = await this.client
+            .from('user_settings')
+            .upsert({
+                user_id: this.user.id,
+                ...settings
+            });
 
-    // ===== 通用数据库操作 =====
-    saveToDB(storeName, data) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(storeName, 'readwrite');
-            const store = transaction.objectStore(storeName);
-            const request = store.put(data);
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    getFromDB(storeName, key) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(storeName, 'readonly');
-            const store = transaction.objectStore(storeName);
-            const request = store.get(key);
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    getAllFromDB(storeName) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(storeName, 'readonly');
-            const store = transaction.objectStore(storeName);
-            const request = store.getAll();
-
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    deleteFromDB(storeName, key) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(storeName, 'readwrite');
-            const store = transaction.objectStore(storeName);
-            const request = store.delete(key);
-
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    // ===== 数据迁移 =====
-    async migrateFromLocalStorage() {
-        const saved = localStorage.getItem('travelJournalData');
-        if (!saved) return false;
-
-        try {
-            const data = JSON.parse(saved);
-
-            // 迁移设置
-            if (data.settings) {
-                await this.saveSettings(data.settings);
-            }
-
-            // 迁移旅行数据
-            if (data.trips && data.trips.length > 0) {
-                for (const trip of data.trips) {
-                    // 照片需要特殊处理（从 Base64 转为文件）
-                    const migratedTrip = { ...trip, photos: {} };
-
-                    // 保留目的地照片的元数据，但不保留 Base64 数据
-                    for (const [destIndex, photos] of Object.entries(trip.photos)) {
-                        migratedTrip.photos[destIndex] = photos.map(p => ({
-                            id: p.id,
-                            path: null, // 旧数据没有路径
-                            name: p.name,
-                            size: p.size,
-                            addedAt: p.addedAt,
-                            legacySrc: p.src // 保留旧数据用于迁移
-                        }));
-                    }
-
-                    await this.saveTrip(migratedTrip);
-                }
-
-                if (data.currentTripId) {
-                    await this.setCurrentTripId(data.currentTripId);
-                }
-            }
-
-            // 清除旧数据
-            localStorage.removeItem('travelJournalData');
-
-            return true;
-        } catch (e) {
-            console.error('迁移失败:', e);
-            return false;
+        if (error) {
+            console.error('保存设置失败:', error);
         }
     }
 
-    // ===== 导出数据 =====
+    async getSettings() {
+        const defaults = {
+            site_title: '旅行摄影日志',
+            site_subtitle: '用镜头记录世界的美好',
+            footer_info: 'TRAVEL JOURNAL',
+            theme: 'coral',
+            film_stock: 'KODAK PORTRA 400',
+            current_trip_id: null
+        };
+
+        if (!this.client || !this.user) return defaults;
+
+        const { data, error } = await this.client
+            .from('user_settings')
+            .select('*')
+            .eq('user_id', this.user.id)
+            .single();
+
+        if (error || !data) return defaults;
+
+        return { ...defaults, ...data };
+    }
+
+    async setCurrentTripId(id) {
+        if (!this.client || !this.user) return;
+
+        await this.client
+            .from('user_settings')
+            .upsert({
+                user_id: this.user.id,
+                current_trip_id: id
+            });
+    }
+
+    async getCurrentTripId() {
+        if (!this.client || !this.user) return null;
+
+        const { data } = await this.client
+            .from('user_settings')
+            .select('current_trip_id')
+            .eq('user_id', this.user.id)
+            .single();
+
+        return data?.current_trip_id || null;
+    }
+
+    // ===== 数据导入导出 =====
     async exportData() {
         const trips = await this.getAllTrips();
         const settings = await this.getSettings();
@@ -339,18 +330,15 @@ class StorageManager {
         };
     }
 
-    // ===== 导入数据 =====
     async importData(data) {
         if (!data || !data.trips) {
             throw new Error('无效的数据格式');
         }
 
-        // 导入设置
         if (data.settings) {
             await this.saveSettings(data.settings);
         }
 
-        // 导入旅行
         for (const trip of data.trips) {
             await this.saveTrip(trip);
         }
@@ -366,7 +354,6 @@ class StorageManager {
     async getStorageStats() {
         const trips = await this.getAllTrips();
         let photoCount = 0;
-        let tripCount = trips.length;
 
         trips.forEach(trip => {
             Object.values(trip.photos || {}).forEach(photos => {
@@ -374,24 +361,27 @@ class StorageManager {
             });
         });
 
-        // 估算 IndexedDB 使用量
-        let dbSize = 0;
-        try {
-            if (navigator.storage && navigator.storage.estimate) {
-                const estimate = await navigator.storage.estimate();
-                dbSize = estimate.usage || 0;
-            }
-        } catch (e) {
-            // 忽略
-        }
-
         return {
-            tripCount,
+            tripCount: trips.length,
             photoCount,
-            dbSize,
-            formattedDbSize: this.formatBytes(dbSize),
-            hasFileSystem: this.hasDirHandle()
+            hasFileSystem: false,
+            dbSize: 0,
+            formattedDbSize: '云端存储'
         };
+    }
+
+    // ===== 兼容方法 (不再使用) =====
+    hasFileSystemAccess() {
+        return false;
+    }
+
+    hasDirHandle() {
+        return false;
+    }
+
+    async selectPhotosFolder() {
+        console.log('云端模式无需选择文件夹');
+        return true;
     }
 
     formatBytes(bytes) {

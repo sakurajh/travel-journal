@@ -391,8 +391,11 @@ class TravelApp {
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 40px;">
                 <div style="font-size: 4rem; margin-bottom: 24px; opacity: 0.5;">🗺️</div>
                 <h2 style="font-size: 1.5rem; margin-bottom: 12px; color: #F5F0E8;">还没有旅行记录</h2>
-                <p style="font-size: 1rem; color: #888; margin-bottom: 32px;">去后台创建你的第一个旅行摄影日志吧</p>
-                <a href="admin.html" style="padding: 14px 32px; background: #E85D4A; color: white; text-decoration: none; border-radius: 8px; font-size: 1rem;">进入后台管理</a>
+                <p style="font-size: 1rem; color: #888; margin-bottom: 32px;">登录后在后台创建你的第一个旅行摄影日志</p>
+                <div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;">
+                    <a href="login.html" style="padding: 14px 32px; background: #E85D4A; color: white; text-decoration: none; border-radius: 8px; font-size: 1rem;">登录 / 注册</a>
+                    <a href="admin.html" style="padding: 14px 32px; background: #333; color: white; text-decoration: none; border-radius: 8px; font-size: 1rem;">后台管理</a>
+                </div>
             </div>
         `;
     }
@@ -407,7 +410,7 @@ class TravelApp {
         const mainTitle = trip.name.split(' ')[0] || 'TRAVEL';
         document.getElementById('titleMain').textContent = mainTitle;
         document.getElementById('titleYear').textContent = trip.year;
-        document.getElementById('subtitleCn').textContent = trip.description || settings.siteSubtitle || '';
+        document.getElementById('subtitleCn').textContent = trip.description || settings.site_subtitle || '';
         document.getElementById('subtitleEn').textContent = trip.subtitle || 'A PHOTOGRAPHIC JOURNAL';
         document.getElementById('subtitleDesc').textContent = this.getRegions(trip);
 
@@ -420,8 +423,8 @@ class TravelApp {
         await this.renderGallery(trip);
 
         // 更新信息
-        document.getElementById('footerInfo').textContent = settings.footerInfo || 'TRAVEL JOURNAL';
-        document.getElementById('filmStock').textContent = settings.filmStock || 'KODAK PORTRA 400';
+        document.getElementById('footerInfo').textContent = settings.footer_info || 'TRAVEL JOURNAL';
+        document.getElementById('filmStock').textContent = settings.film_stock || 'KODAK PORTRA 400';
         document.getElementById('rollInfo').textContent = `${trip.name.replace(/\s+/g, '-').toUpperCase()}-R1`;
 
         // 应用主题
@@ -478,8 +481,8 @@ class TravelApp {
                 for (const photo of photos) {
                     let photoSrc = photo.legacySrc || '';
 
-                    if (photo.path && storageManager.hasDirHandle()) {
-                        photoSrc = await storageManager.getPhotoUrl(photo.path) || '';
+                    if (photo.path) {
+                        photoSrc = await storageManager.getPhotoUrl(photo.path) || photoSrc;
                     }
 
                     this.currentPhotos.push({

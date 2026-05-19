@@ -8,40 +8,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 初始化存储
     await storageManager.init();
 
-    // 检查是否需要迁移旧数据
-    const hasOld = localStorage.getItem('travelJournalData');
-    if (hasOld) {
-        if (confirm('检测到旧数据，是否迁移到新存储系统？')) {
-            await storageManager.migrateFromLocalStorage();
-            alert('数据迁移完成！');
-        }
-    }
-
     // 初始化界面
     initNavigation();
     setupUploadZone();
     await renderTrips();
     await loadSettings();
-
-    // 如果不支持 File System Access API，显示提示
-    if (!storageManager.hasFileSystemAccess()) {
-        showCompatibilityWarning();
-    }
 });
-
-// ===== 兼容性警告 =====
-function showCompatibilityWarning() {
-    const warning = document.createElement('div');
-    warning.className = 'compat-warning';
-    warning.innerHTML = `
-        <div class="warning-content">
-            <strong>提示：</strong>您的浏览器不支持文件系统访问，照片将存储在 IndexedDB 中（约 50MB 限制）。
-            推荐使用 Chrome 或 Edge 浏览器以获得无限存储。
-            <button onclick="this.parentElement.parentElement.remove()">知道了</button>
-        </div>
-    `;
-    document.body.prepend(warning);
-}
 
 // ===== 导航 =====
 function initNavigation() {
@@ -297,8 +269,8 @@ async function renderPhotos() {
 
         for (const photo of photos) {
             let photoSrc = photo.legacySrc || '';
-            if (photo.path && storageManager.hasDirHandle()) {
-                photoSrc = await storageManager.getPhotoUrl(photo.path) || '';
+            if (photo.path) {
+                photoSrc = await storageManager.getPhotoUrl(photo.path) || photoSrc;
             }
 
             allPhotos.push({
@@ -452,26 +424,11 @@ async function confirmUpload() {
 
     for (const photo of pendingUploads) {
         try {
-            let photoData;
-
-            if (storageManager.hasDirHandle()) {
-                // 使用文件系统存储
-                photoData = await storageManager.savePhoto(
-                    currentUploadTripId,
-                    parseInt(destIndex),
-                    photo.file
-                );
-            } else {
-                // 回退到 IndexedDB 存储 Base64
-                photoData = {
-                    id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    path: null,
-                    name: photo.name,
-                    size: photo.size,
-                    addedAt: new Date().toISOString(),
-                    legacySrc: photo.preview
-                };
-            }
+            const photoData = await storageManager.savePhoto(
+                currentUploadTripId,
+                parseInt(destIndex),
+                photo.file
+            );
 
             // 添加到旅行数据
             if (!trip.photos[destIndex]) {
@@ -510,7 +467,7 @@ async function deletePhoto(tripId, destIndex, photoId) {
     const photo = trip.photos[destIndex][photoIndex];
 
     // 删除文件
-    if (photo.path && storageManager.hasDirHandle()) {
+    if (photo.path) {
         await storageManager.deletePhoto(photo.path);
     }
 
@@ -525,10 +482,10 @@ async function deletePhoto(tripId, destIndex, photoId) {
 async function loadSettings() {
     const settings = await storageManager.getSettings();
 
-    document.getElementById('siteTitle').value = settings.siteTitle || '';
-    document.getElementById('siteSubtitle').value = settings.siteSubtitle || '';
-    document.getElementById('footerInfo').value = settings.footerInfo || '';
-    document.getElementById('filmStock').value = settings.filmStock || '';
+    document.getElementById('siteTitle').value = settings.site_title || settings.siteTitle || '';
+    document.getElementById('siteSubtitle').value = settings.site_subtitle || settings.siteSubtitle || '';
+    document.getElementById('footerInfo').value = settings.footer_info || settings.footerInfo || '';
+    document.getElementById('filmStock').value = settings.film_stock || settings.filmStock || '';
 
     const themeRadio = document.querySelector(`input[name="theme"][value="${settings.theme}"]`);
     if (themeRadio) themeRadio.checked = true;
@@ -539,10 +496,10 @@ async function loadSettings() {
 
 async function saveSettings() {
     const settings = {
-        siteTitle: document.getElementById('siteTitle').value,
-        siteSubtitle: document.getElementById('siteSubtitle').value,
-        footerInfo: document.getElementById('footerInfo').value,
-        filmStock: document.getElementById('filmStock').value,
+        site_title: document.getElementById('siteTitle').value,
+        site_subtitle: document.getElementById('siteSubtitle').value,
+        footer_info: document.getElementById('footerInfo').value,
+        film_stock: document.getElementById('filmStock').value,
         theme: document.querySelector('input[name="theme"]:checked').value
     };
 
@@ -553,11 +510,11 @@ async function saveSettings() {
 async function resetSettings() {
     if (confirm('确定要重置为默认设置吗？')) {
         await storageManager.saveSettings({
-            siteTitle: '旅行摄影日志',
-            siteSubtitle: '用镜头记录世界的美好',
-            footerInfo: 'TRAVEL JOURNAL',
+            site_title: '旅行摄影日志',
+            site_subtitle: '用镜头记录世界的美好',
+            footer_info: 'TRAVEL JOURNAL',
             theme: 'coral',
-            filmStock: 'KODAK PORTRA 400'
+            film_stock: 'KODAK PORTRA 400'
         });
         await loadSettings();
     }
@@ -570,40 +527,22 @@ async function updateStorageStats() {
     document.getElementById('statTrips').textContent = stats.tripCount;
     document.getElementById('statPhotos').textContent = stats.photoCount;
     document.getElementById('statStorage').textContent = stats.formattedDbSize;
-    document.getElementById('statFileSystem').textContent = stats.hasFileSystem ? '已启用' : '未启用';
 
     const fsStatus = document.getElementById('fileSystemStatus');
-    if (storageManager.hasFileSystemAccess()) {
-        if (stats.hasFileSystem) {
-            fsStatus.innerHTML = '<span class="status-ok">✓ 文件系统已连接</span>';
-        } else {
-            fsStatus.innerHTML = `
-                <span class="status-warn">未连接文件系统</span>
-                <button class="btn btn-primary btn-sm" onclick="connectFileSystem()">选择照片文件夹</button>
-            `;
-        }
+    if (storageManager.isLoggedIn()) {
+        fsStatus.innerHTML = '<span class="status-ok">✓ 已连接 Supabase 云端</span>';
     } else {
-        fsStatus.innerHTML = '<span class="status-warn">浏览器不支持文件系统访问，使用 IndexedDB 存储</span>';
-    }
-}
-
-async function connectFileSystem() {
-    const success = await storageManager.selectPhotosFolder();
-    if (success) {
-        alert('文件系统已连接！照片将保存到本地文件夹。');
-        await updateStorageStats();
+        fsStatus.innerHTML = '<span class="status-warn">未登录，使用本地模式</span>';
     }
 }
 
 async function updateUploadStorageStatus() {
-    const stats = await storageManager.getStorageStats();
     const statusEl = document.getElementById('uploadStorageStatus');
-
     if (statusEl) {
-        if (stats.hasFileSystem) {
-            statusEl.innerHTML = '<span class="status-ok">✓ 使用本地文件存储（无限制）</span>';
+        if (storageManager.isLoggedIn()) {
+            statusEl.innerHTML = '<span class="status-ok">✓ 上传到 Supabase 云端存储</span>';
         } else {
-            statusEl.innerHTML = `<span class="status-warn">使用 IndexedDB 存储（已用 ${stats.formattedDbSize}）</span>`;
+            statusEl.innerHTML = '<span class="status-warn">未登录，无法上传</span>';
         }
     }
 }

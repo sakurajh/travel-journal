@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 旅行摄影日志</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.font.im/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-primary);
+            overflow: hidden;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-coral);
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            letter-spacing: 0.2em;
+        }
+
+        .login-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-coral), var(--accent-orange));
+        }
+
+        .login-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 28px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .login-tab {
+            flex: 1;
+            padding: 12px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: 'Noto Sans SC', sans-serif;
+            transition: color 0.3s, border-color 0.3s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .login-tab.active {
+            color: var(--accent-coral);
+            border-bottom-color: var(--accent-coral);
+        }
+
+        .login-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .login-form {
+            display: none;
+        }
+
+        .login-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            letter-spacing: 0.05em;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-coral);
+            box-shadow: 0 0 0 3px rgba(232, 93, 74, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-coral);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
+            letter-spacing: 0.1em;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(232, 93, 74, 0.3);
+            background: var(--accent-orange);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .login-error {
+            background: rgba(232, 93, 74, 0.1);
+            border: 1px solid rgba(232, 93, 74, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #ff6b6b;
+            display: none;
+        }
+
+        .login-error.show {
+            display: block;
+        }
+
+        .login-success {
+            background: rgba(46, 139, 87, 0.1);
+            border: 1px solid rgba(46, 139, 87, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #4ade80;
+            display: none;
+        }
+
+        .login-success.show {
+            display: block;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .login-footer a {
+            color: var(--accent-coral);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+
+        .login-footer a:hover {
+            color: var(--accent-orange);
+        }
+
+        /* 背景粒子 */
+        .login-particles {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .login-particle {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--accent-coral);
+            opacity: 0.08;
+            animation: floatParticle linear infinite;
+        }
+
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.08; }
+            90% { opacity: 0.08; }
+            100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* 胶片边框装饰 */
+        .film-border {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: 40px;
+            z-index: -1;
+            opacity: 0.03;
+        }
+
+        .film-border-left {
+            left: 0;
+            background: repeating-linear-gradient(
+                180deg,
+                transparent 0px,
+                transparent 20px,
+                var(--text-primary) 20px,
+                var(--text-primary) 30px,
+                transparent 30px,
+                transparent 50px
+            );
+        }
+
+        .film-border-right {
+            right: 0;
+            background: repeating-linear-gradient(
+                180deg,
+                transparent 0px,
+                transparent 20px,
+                var(--text-primary) 20px,
+                var(--text-primary) 30px,
+                transparent 30px,
+                transparent 50px
+            );
+        }
+
+        /* 加载状态 */
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 跳过登录按钮 */
+        .skip-login {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .skip-login:hover {
+            color: var(--text-secondary);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-subtle);
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景装饰 -->
+    <div class="login-particles" id="particles"></div>
+    <div class="film-border film-border-left"></div>
+    <div class="film-border film-border-right"></div>
+
+    <div class="login-container">
+        <div class="login-header">
+            <div class="login-logo">TRAVEL</div>
+            <div class="login-subtitle">旅行摄影日志</div>
+        </div>
+
+        <div class="login-card">
+            <div class="login-tabs">
+                <button class="login-tab active" data-tab="login">登录</button>
+                <button class="login-tab" data-tab="register">注册</button>
+            </div>
+
+            <!-- 错误提示 -->
+            <div class="login-error" id="loginError"></div>
+            <div class="login-success" id="loginSuccess"></div>
+
+            <!-- 登录表单 -->
+            <form class="login-form active" id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">邮箱</label>
+                    <input type="email" class="form-input" id="loginEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-input" id="loginPassword" placeholder="输入密码" required>
+                </div>
+                <button type="submit" class="login-btn" id="loginBtn">登 录</button>
+            </form>
+
+            <!-- 注册表单 -->
+            <form class="login-form" id="registerForm">
+                <div class="form-group">
+                    <label class="form-label">昵称</label>
+                    <input type="text" class="form-input" id="regName" placeholder="你的昵称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">邮箱</label>
+                    <input type="email" class="form-input" id="regEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-input" id="regPassword" placeholder="至少 6 位密码" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">确认密码</label>
+                    <input type="password" class="form-input" id="regPasswordConfirm" placeholder="再次输入密码" required minlength="6">
+                </div>
+                <button type="submit" class="login-btn" id="regBtn">注 册</button>
+            </form>
+
+            <div class="divider">或</div>
+            <a href="index.html" class="skip-login">先去看看前台 →</a>
+        </div>
+
+        <div class="login-footer">
+            <a href="index.html">← 返回首页</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script>
+        // 背景粒子
+        function initParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 15; i++) {
+                const p = document.createElement('div');
+                p.className = 'login-particle';
+                const size = Math.random() * 6 + 2;
+                p.style.width = p.style.height = size + 'px';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                p.style.animationDelay = Math.random() * 10 + 's';
+                container.appendChild(p);
+            }
+        }
+        initParticles();
+
+        // 标签切换
+        document.querySelectorAll('.login-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + 'Form').classList.add('active');
+                hideMessages();
+            });
+        });
+
+        function showError(msg) {
+            const el = document.getElementById('loginError');
+            el.textContent = msg;
+            el.classList.add('show');
+            document.getElementById('loginSuccess').classList.remove('show');
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('loginSuccess');
+            el.textContent = msg;
+            el.classList.add('show');
+            document.getElementById('loginError').classList.remove('show');
+        }
+
+        function hideMessages() {
+            document.getElementById('loginError').classList.remove('show');
+            document.getElementById('loginSuccess').classList.remove('show');
+        }
+
+        function setLoading(btn, loading) {
+            if (loading) {
+                btn.dataset.originalText = btn.textContent;
+                btn.innerHTML = '<span class="loading-spinner"></span>处理中...';
+                btn.disabled = true;
+            } else {
+                btn.textContent = btn.dataset.originalText || btn.textContent;
+                btn.disabled = false;
+            }
+        }
+
+        // 检查是否已登录
+        async function checkAuth() {
+            const client = window.supabaseClient || (window.initSupabase && window.initSupabase());
+            if (!client) return;
+            const { data: { session } } = await client.auth.getSession();
+            if (session) {
+                window.location.href = 'admin.html';
+            }
+        }
+        checkAuth();
+
+        // 登录
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+            const btn = document.getElementById('loginBtn');
+            setLoading(btn, true);
+
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const client = window.supabaseClient || (window.initSupabase && window.initSupabase());
+                if (!client) {
+                    showError('请先配置 Supabase（编辑 supabase.js）');
+                    return;
+                }
+
+                const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    showError(error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message);
+                    return;
+                }
+
+                showSuccess('登录成功，正在跳转...');
+                setTimeout(() => {
+                    window.location.href = 'admin.html';
+                }, 800);
+            } catch (err) {
+                showError('登录失败：' + err.message);
+            } finally {
+                setLoading(btn, false);
+            }
+        });
+
+        // 注册
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+            const btn = document.getElementById('regBtn');
+            setLoading(btn, true);
+
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regPasswordConfirm').value;
+
+            if (password !== confirm) {
+                showError('两次输入的密码不一致');
+                setLoading(btn, false);
+                return;
+            }
+
+            try {
+                const client = window.supabaseClient || (window.initSupabase && window.initSupabase());
+                if (!client) {
+                    showError('请先配置 Supabase（编辑 supabase.js）');
+                    return;
+                }
+
+                const { data, error } = await client.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: { display_name: name || email.split('@')[0] }
+                    }
+                });
+
+                if (error) {
+                    showError(error.message);
+                    return;
+                }
+
+                if (data.user && !data.session) {
+                    showSuccess('注册成功！请查看邮箱确认链接后再登录。');
+                } else {
+                    // 自动创建用户设置
+                    try {
+                        await client.from('user_settings').upsert({
+                            user_id: data.user.id
+                        });
+                    } catch (e) {
+                        // 忽略
+                    }
+                    showSuccess('注册成功，正在跳转...');
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 800);
+                }
+            } catch (err) {
+                showError('注册失败：' + err.message);
+            } finally {
+                setLoading(btn, false);
+            }
+        });
+    </script>
+</body>
+</html>

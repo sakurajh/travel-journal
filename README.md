@@ -35,30 +35,47 @@
 - 分享功能
 
 ### 后台管理
+- 用户注册/登录（Supabase Auth）
 - 旅行管理（创建、编辑、删除）
 - 目的地管理
-- 照片上传（支持批量）
-- 文件系统存储（Chrome/Edge）
+- 照片上传（支持批量，存储到云端）
 - 页面设置
 - 数据导入/导出
+- 多设备数据同步
 
 ## 文件结构
 
 ```
 ├── index.html      # 前台展示
 ├── admin.html      # 后台管理
+├── login.html      # 登录/注册页面
 ├── style.css       # 前台样式
 ├── admin.css       # 后台样式
 ├── app.js          # 前台逻辑
 ├── admin.js        # 后台逻辑
-├── storage.js      # 存储管理
+├── storage.js      # 存储管理（Supabase）
+├── supabase.js     # Supabase 客户端配置
 ├── vercel.json     # Vercel 配置
 ├── deploy.bat      # 部署脚本（Windows）
 ├── deploy.sh       # 部署脚本（Mac/Linux）
 ├── VERCEL.md       # Vercel 部署教程
 ├── DEPLOY.md       # GitHub Pages 教程
+├── SUPABASE.md     # Supabase 配置教程
 └── README.md       # 说明文档
 ```
+
+## Supabase 配置（必须）
+
+本项目使用 Supabase 作为后端，提供用户认证、数据存储和照片存储。
+
+### 快速配置
+1. 访问 https://supabase.com 创建项目
+2. 获取 Project URL 和 anon key
+3. 填入 `supabase.js`
+4. 在 SQL Editor 执行建表语句
+5. 创建 Storage bucket
+
+详细教程见 [SUPABASE.md](SUPABASE.md)
 
 ## 快捷键
 
@@ -78,9 +95,9 @@
 
 ## 数据存储
 
-- **Chrome/Edge**：可选择本地文件夹存储，无大小限制
-- **其他浏览器**：使用 IndexedDB，约 50MB 限制
-- **远程访问**：数据存在用户浏览器中，不同设备不共享
+- **Supabase 云端**：数据和照片存储在云端，支持多设备同步
+- **免费额度**：500MB 数据库 + 1GB 文件存储
+- **认证**：邮箱密码注册/登录
 
 ## 许可
 

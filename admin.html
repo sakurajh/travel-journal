@@ -31,9 +31,16 @@
                 </a>
             </nav>
             <div class="sidebar-footer">
+                <div class="user-info">
+                    <span class="user-icon">👤</span>
+                    <span id="currentUser">未登录</span>
+                </div>
                 <a href="index.html" class="view-site-btn" target="_blank">
                     查看网站 →
                 </a>
+                <button class="logout-btn" onclick="storageManager.signOut()">
+                    退出登录
+                </button>
             </div>
         </aside>
 
@@ -155,9 +162,9 @@
                         </div>
 
                         <div class="file-system-section">
-                            <h4>文件系统</h4>
-                            <div id="fileSystemStatus">检测中...</div>
-                            <p class="help-text">连接文件系统后，照片将直接保存到本地文件夹，无大小限制。</p>
+                            <h4>云端存储</h4>
+                            <div id="fileSystemStatus">已连接 Supabase 云端</div>
+                            <p class="help-text">数据和照片已同步到云端，支持多设备访问。</p>
                         </div>
 
                         <div class="data-actions">
@@ -252,7 +259,29 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
     <script src="storage.js"></script>
     <script src="admin.js"></script>
+    <script>
+        // 认证检查 - 未登录跳转到登录页
+        async function checkAdminAuth() {
+            const client = window.supabaseClient || (window.initSupabase && window.initSupabase());
+            if (!client) {
+                // Supabase 未配置，允许本地模式
+                return;
+            }
+            const { data: { session } } = await client.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+            // 显示用户信息
+            const userName = session.user.user_metadata?.display_name || session.user.email;
+            const userEl = document.getElementById('currentUser');
+            if (userEl) userEl.textContent = userName;
+        }
+        checkAdminAuth();
+    </script>
 </body>
 </html>
