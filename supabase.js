@@ -2,8 +2,8 @@
 // 在 Supabase 项目设置中获取这两个值
 // Settings → API → Project URL 和 anon public key
 
-const SUPABASE_URL = 'https://你的项目ID.supabase.co';
-const SUPABASE_ANON_KEY = '你的anon key';
+const SUPABASE_URL = 'https://aryfdgpemwengqtuzkjm.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_E_OaooSH50rU7Serxew2gg_JknTSA6-';
 
 // 初始化 Supabase 客户端
 function initSupabase() {
