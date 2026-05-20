@@ -120,28 +120,88 @@ body {
     position: relative;
 }
 
-/* 动态背景 */
+/* 电影感动态背景 - 参考影视飓风 */
 body::before {
     content: '';
     position: fixed;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    inset: 0;
     background:
-        radial-gradient(ellipse at 20% 50%, rgba(232, 93, 74, 0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(232, 100, 53, 0.06) 0%, transparent 50%),
-        radial-gradient(ellipse at 40% 80%, rgba(232, 93, 74, 0.04) 0%, transparent 50%);
-    animation: bgFloat 20s ease-in-out infinite;
-    z-index: -1;
+        radial-gradient(ellipse 80% 60% at 10% 90%, rgba(232, 93, 74, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 90% 10%, rgba(200, 80, 60, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 100% 50% at 50% 50%, rgba(232, 93, 74, 0.03) 0%, transparent 70%);
+    animation: cinematicShift 25s ease-in-out infinite;
+    z-index: -3;
     pointer-events: none;
 }
 
-@keyframes bgFloat {
-    0%, 100% { transform: translate(0, 0) rotate(0deg); }
-    25% { transform: translate(2%, -3%) rotate(1deg); }
-    50% { transform: translate(-1%, 2%) rotate(-0.5deg); }
-    75% { transform: translate(3%, 1%) rotate(0.5deg); }
+@keyframes cinematicShift {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1) translate(0, 0);
+    }
+    33% {
+        opacity: 0.8;
+        transform: scale(1.05) translate(-2%, 1%);
+    }
+    66% {
+        opacity: 1;
+        transform: scale(0.98) translate(1%, -1%);
+    }
+}
+
+/* 胶片颗粒纹理 */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    opacity: 0.4;
+    z-index: -2;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+}
+
+/* 暗角效果 */
+.container::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.4) 100%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* 浮动光斑 */
+.bokeh-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.bokeh-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232, 93, 74, 0.15) 0%, transparent 70%);
+    animation: bokehFloat linear infinite;
+    opacity: 0;
+}
+
+.bokeh-dot:nth-child(1) { width: 200px; height: 200px; left: 10%; top: 20%; animation-duration: 30s; animation-delay: 0s; }
+.bokeh-dot:nth-child(2) { width: 150px; height: 150px; left: 60%; top: 70%; animation-duration: 25s; animation-delay: 5s; }
+.bokeh-dot:nth-child(3) { width: 180px; height: 180px; left: 80%; top: 30%; animation-duration: 35s; animation-delay: 10s; }
+.bokeh-dot:nth-child(4) { width: 120px; height: 120px; left: 30%; top: 80%; animation-duration: 28s; animation-delay: 3s; }
+.bokeh-dot:nth-child(5) { width: 160px; height: 160px; left: 50%; top: 10%; animation-duration: 32s; animation-delay: 8s; }
+
+@keyframes bokehFloat {
+    0% { transform: translate(0, 0) scale(0.8); opacity: 0; }
+    10% { opacity: 0.6; }
+    50% { transform: translate(30px, -50px) scale(1.2); opacity: 0.4; }
+    90% { opacity: 0.6; }
+    100% { transform: translate(-20px, 30px) scale(0.9); opacity: 0; }
 }
 
 /* ===== Layout ===== */
@@ -155,12 +215,13 @@ body::before {
 .left-panel {
     width: 420px;
     min-width: 420px;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, var(--bg-primary) 0%, rgba(17,17,17,0.95) 100%);
     border-right: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
     position: relative;
     z-index: 10;
+    backdrop-filter: blur(20px);
 }
 
 .left-content {
@@ -419,7 +480,7 @@ body::before {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: var(--bg-secondary);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(26,26,26,0.98) 50%, var(--bg-secondary) 100%);
     position: relative;
     overflow: hidden;
 }
@@ -427,15 +488,19 @@ body::before {
 .right-panel::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background:
-        radial-gradient(ellipse at 20% 50%, rgba(232, 100, 53, 0.05) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 50%, rgba(232, 93, 74, 0.03) 0%, transparent 50%);
+        radial-gradient(ellipse 40% 30% at 20% 80%, rgba(232, 93, 74, 0.06) 0%, transparent 100%),
+        radial-gradient(ellipse 30% 40% at 80% 20%, rgba(200, 80, 60, 0.04) 0%, transparent 100%),
+        radial-gradient(ellipse 50% 50% at 50% 50%, rgba(232, 100, 53, 0.02) 0%, transparent 100%);
     pointer-events: none;
     z-index: 0;
+    animation: rightPanelGlow 15s ease-in-out infinite alternate;
+}
+
+@keyframes rightPanelGlow {
+    0% { opacity: 1; transform: translate(0, 0); }
+    100% { opacity: 0.7; transform: translate(5%, -3%); }
 }
 
 /* ===== Gallery Header ===== */
