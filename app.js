@@ -343,131 +343,112 @@ class TravelApp {
         modal.classList.add('active');
     }
 
-    // ===== 旅行地图 =====
+    // ===== 旅行地图 (Leaflet.js) =====
     openMapModal() {
         const modal = document.getElementById('mapModal');
-        const canvas = document.getElementById('travelMap');
         const legend = document.getElementById('mapLegend');
 
         if (!this.currentTrip) return;
 
         const trip = this.currentTrip;
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
+        modal.classList.add('active');
 
-        // 简化的世界地图坐标（主要城市）
-        const cityCoords = {
-            'BALI': { x: 0.72, y: 0.62 },
-            'BROMO': { x: 0.72, y: 0.58 },
-            'IJEN': { x: 0.71, y: 0.59 },
-            'UBUD': { x: 0.72, y: 0.61 },
-            'ULUWATU': { x: 0.71, y: 0.63 },
-            'NUSA PENIDA': { x: 0.73, y: 0.62 },
-            'SEMINYAK': { x: 0.71, y: 0.62 },
-            'SINGAPORE': { x: 0.70, y: 0.56 },
-            'JAKARTA': { x: 0.68, y: 0.58 },
-            'TOKYO': { x: 0.82, y: 0.38 },
-            'OSAKA': { x: 0.80, y: 0.40 },
-            'SEOUL': { x: 0.79, y: 0.38 },
-            'BANGKOK': { x: 0.68, y: 0.50 },
-            'LONDON': { x: 0.47, y: 0.30 },
-            'PARIS': { x: 0.48, y: 0.32 },
-            'NEW YORK': { x: 0.25, y: 0.35 },
-            'LOS ANGELES': { x: 0.15, y: 0.38 },
-            'SYDNEY': { x: 0.85, y: 0.72 },
-            'MELBOURNE': { x: 0.84, y: 0.73 },
-            'DUBAI': { x: 0.57, y: 0.42 },
-            'MALDIVES': { x: 0.60, y: 0.52 },
-            'HAWAII': { x: 0.08, y: 0.42 },
-            'FIJI': { x: 0.92, y: 0.62 },
+        // 城市真实经纬度
+        const CITY_COORDS = {
+            'BALI': [-8.3405, 115.092],
+            'BROMO': [-7.9425, 112.953],
+            'IJEN': [-8.0583, 114.242],
+            'UBUD': [-8.5069, 115.262],
+            'ULUWATU': [-8.8291, 115.085],
+            'NUSA PENIDA': [-8.7279, 115.544],
+            'SEMINYAK': [-8.6900, 115.157],
+            'SINGAPORE': [1.3521, 103.819],
+            'JAKARTA': [-6.2088, 106.846],
+            'TOKYO': [35.6762, 139.650],
+            'OSAKA': [34.6937, 135.502],
+            'SEOUL': [37.5665, 126.978],
+            'BANGKOK': [13.7563, 100.502],
+            'LONDON': [51.5074, -0.1278],
+            'PARIS': [48.8566, 2.3522],
+            'NEW YORK': [40.7128, -74.006],
+            'LOS ANGELES': [34.0522, -118.244],
+            'SYDNEY': [-33.8688, 151.209],
+            'MELBOURNE': [-37.8136, 144.963],
+            'DUBAI': [25.2048, 55.2708],
+            'MALDIVES': [3.2028, 73.2207],
+            'HAWAII': [21.3069, -157.858],
+            'FIJI': [-17.7134, 178.065],
         };
 
-        // 查找匹配的坐标
+        // 查找匹配坐标
         function findCoords(destName) {
             const upperName = destName.toUpperCase();
-            for (const [key, coords] of Object.entries(cityCoords)) {
+            for (const [key, coords] of Object.entries(CITY_COORDS)) {
                 if (upperName.includes(key)) return coords;
             }
-            // 如果没有匹配，随机放在亚洲区域
-            return { x: 0.65 + Math.random() * 0.2, y: 0.4 + Math.random() * 0.3 };
+            return [-8 + Math.random() * 4, 110 + Math.random() * 10];
         }
 
-        // 绘制背景
-        ctx.fillStyle = '#0a0a0a';
-        ctx.fillRect(0, 0, width, height);
+        // 首次初始化地图
+        if (!this.leafletMap) {
+            this.leafletMap = L.map('travelMap', {
+                zoomControl: true,
+                attributionControl: false,
+            }).setView([-8, 115], 6);
 
-        // 绘制简化地图轮廓
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.lineWidth = 1;
+            // 暗色底图 (CartoDB Dark Matter)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+            }).addTo(this.leafletMap);
+        }
 
-        // 大洲轮廓（简化）
-        const continents = [
-            // 亚洲
-            [[0.55, 0.25], [0.65, 0.2], [0.75, 0.25], [0.85, 0.3], [0.82, 0.45], [0.75, 0.55], [0.65, 0.6], [0.55, 0.55], [0.55, 0.25]],
-            // 欧洲
-            [[0.45, 0.2], [0.55, 0.18], [0.55, 0.35], [0.45, 0.4], [0.45, 0.2]],
-            // 非洲
-            [[0.45, 0.4], [0.55, 0.4], [0.58, 0.55], [0.52, 0.7], [0.45, 0.65], [0.42, 0.5], [0.45, 0.4]],
-            // 北美洲
-            [[0.1, 0.2], [0.3, 0.15], [0.35, 0.3], [0.25, 0.45], [0.15, 0.42], [0.1, 0.3], [0.1, 0.2]],
-            // 南美洲
-            [[0.25, 0.5], [0.35, 0.48], [0.38, 0.6], [0.32, 0.75], [0.25, 0.7], [0.22, 0.55], [0.25, 0.5]],
-            // 大洋洲
-            [[0.78, 0.6], [0.88, 0.58], [0.92, 0.65], [0.88, 0.75], [0.78, 0.72], [0.78, 0.6]],
-        ];
+        // 清除旧图层
+        if (this.leafletLayers) {
+            this.leafletLayers.forEach(layer => this.leafletMap.removeLayer(layer));
+        }
+        this.leafletLayers = [];
 
-        continents.forEach(continent => {
-            ctx.beginPath();
-            continent.forEach((point, i) => {
-                const x = point[0] * width;
-                const y = point[1] * height;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-            ctx.closePath();
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-            ctx.fill();
-            ctx.stroke();
-        });
-
-        // 绘制目的地标记
         const colors = ['#E85D4A', '#E86435', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
+        const latlngs = [];
         legend.innerHTML = '';
 
         trip.destinations.forEach((dest, index) => {
             const coords = findCoords(dest.name);
-            const x = coords.x * width;
-            const y = coords.y * height;
             const color = colors[index % colors.length];
+            latlngs.push(coords);
 
-            // 发光效果
-            const gradient = ctx.createRadialGradient(x, y, 0, x, y, 20);
-            gradient.addColorStop(0, color + '80');
-            gradient.addColorStop(1, 'transparent');
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(x, y, 20, 0, Math.PI * 2);
-            ctx.fill();
+            // 外圈发光
+            const glow = L.circleMarker(coords, {
+                radius: 18,
+                fillColor: color,
+                fillOpacity: 0.2,
+                stroke: false,
+            }).addTo(this.leafletMap);
+            this.leafletLayers.push(glow);
 
-            // 标记点
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.arc(x, y, 6, 0, Math.PI * 2);
-            ctx.fill();
+            // 内圈标记
+            const marker = L.circleMarker(coords, {
+                radius: 7,
+                fillColor: color,
+                fillOpacity: 0.9,
+                color: '#fff',
+                weight: 2,
+            }).addTo(this.leafletMap);
 
-            // 白色边框
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(x, y, 6, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // 标签
-            ctx.fillStyle = 'white';
-            ctx.font = '11px Space Grotesk, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(dest.name, x, y - 14);
+            // 弹出框
+            const popupContent = `
+                <div style="text-align:center;font-family:'Space Grotesk',sans-serif;">
+                    <div style="font-size:1.2rem;font-weight:700;color:${color};margin-bottom:4px;">${dest.index || String(index + 1).padStart(2, '0')}</div>
+                    <div style="font-size:0.95rem;font-weight:600;color:#F5F0E8;margin-bottom:2px;">${dest.name}</div>
+                    <div style="font-size:0.75rem;color:#999;">${dest.date || ''} ${dest.region ? '· ' + dest.region : ''}</div>
+                </div>
+            `;
+            marker.bindPopup(popupContent, {
+                className: 'dark-popup',
+                closeButton: false,
+                offset: [0, -8],
+            });
+            this.leafletLayers.push(marker);
 
             // 图例
             legend.innerHTML += `
@@ -478,22 +459,25 @@ class TravelApp {
             `;
         });
 
-        // 绘制连接线
-        ctx.strokeStyle = 'rgba(232, 93, 74, 0.3)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        trip.destinations.forEach((dest, index) => {
-            const coords = findCoords(dest.name);
-            const x = coords.x * width;
-            const y = coords.y * height;
-            if (index === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // 路线连线
+        if (latlngs.length > 1) {
+            const route = L.polyline(latlngs, {
+                color: '#E85D4A',
+                weight: 2,
+                opacity: 0.5,
+                dashArray: '8, 8',
+            }).addTo(this.leafletMap);
+            this.leafletLayers.push(route);
+        }
 
-        modal.classList.add('active');
+        // 自动缩放到所有标记范围
+        if (latlngs.length > 0) {
+            const bounds = L.latLngBounds(latlngs);
+            this.leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+        }
+
+        // 刷新地图尺寸（解决隐藏容器内地图渲染问题）
+        setTimeout(() => this.leafletMap.invalidateSize(), 200);
     }
 
     // ===== 照片详情 =====
