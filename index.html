@@ -279,22 +279,24 @@
     <script src="storage.js"></script>
     <script src="app.js"></script>
 
-    <!-- Canvas 动态背景动画 -->
+    <!-- 优化的轻量背景动画 -->
     <script>
     (function() {
         const canvas = document.getElementById('bgCanvas');
         const ctx = canvas.getContext('2d');
         let width, height;
         let time = 0;
-        let animationId;
+        let lastFrame = 0;
+        const FPS = 24; // 降低帧率
+        const frameInterval = 1000 / FPS;
 
-        // 光斑对象
+        // 减少光斑数量
         const orbs = [];
-        const orbCount = 8;
+        const orbCount = 3;
 
-        // 星星对象
+        // 减少星星数量
         const stars = [];
-        const starCount = 100;
+        const starCount = 20;
 
         function resize() {
             width = canvas.width = window.innerWidth;
@@ -303,22 +305,20 @@
 
         function initOrbs() {
             const colors = [
-                { r: 232, g: 93, b: 74 },   // 珊瑚红
-                { r: 200, g: 80, b: 60 },    // 暗红
-                { r: 232, g: 100, b: 53 },   // 橙色
-                { r: 180, g: 60, b: 40 },    // 深红
-                { r: 255, g: 120, b: 80 },   // 亮橙
+                { r: 232, g: 93, b: 74 },
+                { r: 200, g: 80, b: 60 },
+                { r: 232, g: 100, b: 53 }
             ];
 
             for (let i = 0; i < orbCount; i++) {
                 orbs.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
-                    radius: 150 + Math.random() * 250,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    speedX: (Math.random() - 0.5) * 0.3,
-                    speedY: (Math.random() - 0.5) * 0.2,
-                    opacity: 0.05 + Math.random() * 0.1,
+                    radius: 200 + Math.random() * 200,
+                    color: colors[i % colors.length],
+                    speedX: (Math.random() - 0.5) * 0.2,
+                    speedY: (Math.random() - 0.5) * 0.15,
+                    opacity: 0.06 + Math.random() * 0.08,
                     phase: Math.random() * Math.PI * 2
                 });
             }
@@ -328,21 +328,21 @@
             for (let i = 0; i < starCount; i++) {
                 stars.push({
                     x: Math.random() * width,
-                    y: Math.random() * height * 0.6,
-                    size: 0.5 + Math.random() * 1.5,
-                    opacity: 0.2 + Math.random() * 0.5,
-                    twinkleSpeed: 0.5 + Math.random() * 2,
+                    y: Math.random() * height * 0.5,
+                    size: 1 + Math.random() * 2,
+                    opacity: 0.3 + Math.random() * 0.4,
                     phase: Math.random() * Math.PI * 2
                 });
             }
         }
 
-        function drawBackground() {
-            // 深色渐变背景
+        // 静态背景只画一次
+        let bgDrawn = false;
+        function drawStaticBg() {
+            if (bgDrawn) return;
             const gradient = ctx.createLinearGradient(0, 0, 0, height);
             gradient.addColorStop(0, '#0a0a0a');
-            gradient.addColorStop(0.3, '#0d0d0d');
-            gradient.addColorStop(0.6, '#0a0808');
+            gradient.addColorStop(0.4, '#0d0d0d');
             gradient.addColorStop(1, '#111');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, width, height);
@@ -351,38 +351,52 @@
             const horizonY = height * 0.65;
             const horizonGradient = ctx.createRadialGradient(
                 width * 0.5, horizonY, 0,
-                width * 0.5, horizonY, width * 0.6
+                width * 0.5, horizonY, width * 0.5
             );
-            horizonGradient.addColorStop(0, 'rgba(232, 93, 74, 0.08)');
-            horizonGradient.addColorStop(0.5, 'rgba(200, 80, 60, 0.04)');
+            horizonGradient.addColorStop(0, 'rgba(232, 93, 74, 0.1)');
             horizonGradient.addColorStop(1, 'transparent');
             ctx.fillStyle = horizonGradient;
             ctx.fillRect(0, 0, width, height);
+            bgDrawn = true;
         }
 
-        function drawOrbs() {
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            if (timestamp - lastFrame < frameInterval) return;
+            lastFrame = timestamp;
+
+            time += 0.05;
+
+            // 清除并重绘动态部分
+            ctx.clearRect(0, 0, width, height);
+            drawStaticBg();
+
+            // 绘制星星
+            stars.forEach(star => {
+                const twinkle = Math.sin(time * 1.5 + star.phase) * 0.4 + 0.6;
+                ctx.fillStyle = `rgba(255, 250, 240, ${star.opacity * twinkle})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 绘制光斑
             orbs.forEach(orb => {
-                // 移动
                 orb.x += orb.speedX;
                 orb.y += orb.speedY;
 
-                // 边界反弹
                 if (orb.x < -orb.radius) orb.x = width + orb.radius;
                 if (orb.x > width + orb.radius) orb.x = -orb.radius;
                 if (orb.y < -orb.radius) orb.y = height + orb.radius;
                 if (orb.y > height + orb.radius) orb.y = -orb.radius;
 
-                // 呼吸效果
-                const breathe = Math.sin(time * 0.5 + orb.phase) * 0.3 + 0.7;
-                const currentOpacity = orb.opacity * breathe;
-
-                // 绘制光斑
+                const breathe = Math.sin(time * 0.8 + orb.phase) * 0.3 + 0.7;
                 const gradient = ctx.createRadialGradient(
                     orb.x, orb.y, 0,
                     orb.x, orb.y, orb.radius
                 );
-                gradient.addColorStop(0, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, ${currentOpacity})`);
-                gradient.addColorStop(0.5, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, ${currentOpacity * 0.3})`);
+                gradient.addColorStop(0, `rgba(${orb.color.r}, ${orb.color.g}, ${orb.color.b}, ${orb.opacity * breathe})`);
                 gradient.addColorStop(1, 'transparent');
 
                 ctx.fillStyle = gradient;
@@ -392,54 +406,19 @@
             });
         }
 
-        function drawStars() {
-            stars.forEach(star => {
-                const twinkle = Math.sin(time * star.twinkleSpeed + star.phase) * 0.5 + 0.5;
-                const currentOpacity = star.opacity * twinkle;
-
-                ctx.fillStyle = `rgba(255, 250, 240, ${currentOpacity})`;
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        function drawLightBeams() {
-            // 扫描光线效果
-            const beamX = (Math.sin(time * 0.1) * 0.5 + 0.5) * width;
-            const beamGradient = ctx.createLinearGradient(beamX - 200, 0, beamX + 200, 0);
-            beamGradient.addColorStop(0, 'transparent');
-            beamGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.01)');
-            beamGradient.addColorStop(1, 'transparent');
-
-            ctx.fillStyle = beamGradient;
-            ctx.fillRect(beamX - 200, 0, 400, height);
-        }
-
-        function animate() {
-            time += 0.016;
-
-            drawBackground();
-            drawStars();
-            drawOrbs();
-            drawLightBeams();
-
-            animationId = requestAnimationFrame(animate);
-        }
-
         function init() {
             resize();
             initOrbs();
             initStars();
-            animate();
+            requestAnimationFrame(animate);
         }
 
         window.addEventListener('resize', () => {
             resize();
-            // 重新初始化星星位置
+            bgDrawn = false;
             stars.forEach(star => {
                 star.x = Math.random() * width;
-                star.y = Math.random() * height * 0.6;
+                star.y = Math.random() * height * 0.5;
             });
         });
 
