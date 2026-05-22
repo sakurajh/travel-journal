@@ -40,6 +40,9 @@ class TravelApp {
             this.initMagneticButtons();
             this.animateTitle();
             this.initToolbar();
+            this.initFilters();
+            this.initExif();
+            this.initTransitionAnimations();
         } catch (err) {
             console.error('init error:', err);
             this.hideLoader();
@@ -243,6 +246,11 @@ class TravelApp {
             this.openStatsModal();
         });
 
+        // 旅行地图
+        document.getElementById('btnMap').addEventListener('click', () => {
+            this.openMapModal();
+        });
+
         // 键盘快捷键 F
         document.addEventListener('keydown', (e) => {
             if (e.key === 'f' || e.key === 'F') {
@@ -331,6 +339,159 @@ class TravelApp {
                 </div>
             `;
         }).join('');
+
+        modal.classList.add('active');
+    }
+
+    // ===== 旅行地图 =====
+    openMapModal() {
+        const modal = document.getElementById('mapModal');
+        const canvas = document.getElementById('travelMap');
+        const legend = document.getElementById('mapLegend');
+
+        if (!this.currentTrip) return;
+
+        const trip = this.currentTrip;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // 简化的世界地图坐标（主要城市）
+        const cityCoords = {
+            'BALI': { x: 0.72, y: 0.62 },
+            'BROMO': { x: 0.72, y: 0.58 },
+            'IJEN': { x: 0.71, y: 0.59 },
+            'UBUD': { x: 0.72, y: 0.61 },
+            'ULUWATU': { x: 0.71, y: 0.63 },
+            'NUSA PENIDA': { x: 0.73, y: 0.62 },
+            'SEMINYAK': { x: 0.71, y: 0.62 },
+            'SINGAPORE': { x: 0.70, y: 0.56 },
+            'JAKARTA': { x: 0.68, y: 0.58 },
+            'TOKYO': { x: 0.82, y: 0.38 },
+            'OSAKA': { x: 0.80, y: 0.40 },
+            'SEOUL': { x: 0.79, y: 0.38 },
+            'BANGKOK': { x: 0.68, y: 0.50 },
+            'LONDON': { x: 0.47, y: 0.30 },
+            'PARIS': { x: 0.48, y: 0.32 },
+            'NEW YORK': { x: 0.25, y: 0.35 },
+            'LOS ANGELES': { x: 0.15, y: 0.38 },
+            'SYDNEY': { x: 0.85, y: 0.72 },
+            'MELBOURNE': { x: 0.84, y: 0.73 },
+            'DUBAI': { x: 0.57, y: 0.42 },
+            'MALDIVES': { x: 0.60, y: 0.52 },
+            'HAWAII': { x: 0.08, y: 0.42 },
+            'FIJI': { x: 0.92, y: 0.62 },
+        };
+
+        // 查找匹配的坐标
+        function findCoords(destName) {
+            const upperName = destName.toUpperCase();
+            for (const [key, coords] of Object.entries(cityCoords)) {
+                if (upperName.includes(key)) return coords;
+            }
+            // 如果没有匹配，随机放在亚洲区域
+            return { x: 0.65 + Math.random() * 0.2, y: 0.4 + Math.random() * 0.3 };
+        }
+
+        // 绘制背景
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, width, height);
+
+        // 绘制简化地图轮廓
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+
+        // 大洲轮廓（简化）
+        const continents = [
+            // 亚洲
+            [[0.55, 0.25], [0.65, 0.2], [0.75, 0.25], [0.85, 0.3], [0.82, 0.45], [0.75, 0.55], [0.65, 0.6], [0.55, 0.55], [0.55, 0.25]],
+            // 欧洲
+            [[0.45, 0.2], [0.55, 0.18], [0.55, 0.35], [0.45, 0.4], [0.45, 0.2]],
+            // 非洲
+            [[0.45, 0.4], [0.55, 0.4], [0.58, 0.55], [0.52, 0.7], [0.45, 0.65], [0.42, 0.5], [0.45, 0.4]],
+            // 北美洲
+            [[0.1, 0.2], [0.3, 0.15], [0.35, 0.3], [0.25, 0.45], [0.15, 0.42], [0.1, 0.3], [0.1, 0.2]],
+            // 南美洲
+            [[0.25, 0.5], [0.35, 0.48], [0.38, 0.6], [0.32, 0.75], [0.25, 0.7], [0.22, 0.55], [0.25, 0.5]],
+            // 大洋洲
+            [[0.78, 0.6], [0.88, 0.58], [0.92, 0.65], [0.88, 0.75], [0.78, 0.72], [0.78, 0.6]],
+        ];
+
+        continents.forEach(continent => {
+            ctx.beginPath();
+            continent.forEach((point, i) => {
+                const x = point[0] * width;
+                const y = point[1] * height;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        // 绘制目的地标记
+        const colors = ['#E85D4A', '#E86435', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
+        legend.innerHTML = '';
+
+        trip.destinations.forEach((dest, index) => {
+            const coords = findCoords(dest.name);
+            const x = coords.x * width;
+            const y = coords.y * height;
+            const color = colors[index % colors.length];
+
+            // 发光效果
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, 20);
+            gradient.addColorStop(0, color + '80');
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 标记点
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 白色边框
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 标签
+            ctx.fillStyle = 'white';
+            ctx.font = '11px Space Grotesk, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(dest.name, x, y - 14);
+
+            // 图例
+            legend.innerHTML += `
+                <div class="map-legend-item">
+                    <div class="map-legend-dot" style="background: ${color}"></div>
+                    <span>${dest.name}</span>
+                </div>
+            `;
+        });
+
+        // 绘制连接线
+        ctx.strokeStyle = 'rgba(232, 93, 74, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        trip.destinations.forEach((dest, index) => {
+            const coords = findCoords(dest.name);
+            const x = coords.x * width;
+            const y = coords.y * height;
+            if (index === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
 
         modal.classList.add('active');
     }
@@ -434,6 +595,7 @@ class TravelApp {
         this.initTiltEffect();
         this.initRippleEffect();
         this.animateTitle();
+        this.initButtonRipple();
     }
 
     getRegions(trip) {
@@ -658,19 +820,174 @@ class TravelApp {
         document.body.style.overflow = '';
     }
 
-    updateLightbox() {
+    updateLightbox(animate = false) {
         const photo = this.currentPhotos[this.currentLightboxIndex];
         if (!photo) return;
 
-        document.getElementById('lightboxImage').innerHTML = `<img class="card-image" src="${photo.src}" alt="${photo.destination.name}">`;
-        document.getElementById('lightboxIndex').textContent = photo.destination.index || String(photo.destIndex + 1).padStart(2, '0');
-        document.getElementById('lightboxLocation').textContent = photo.destination.name;
-        document.getElementById('lightboxDate').textContent = `${photo.destination.date || ''} · ${photo.destination.region || ''}`;
+        const imageContainer = document.getElementById('lightboxImage');
+        const info = document.querySelector('.lightbox-info');
+
+        if (animate) {
+            // 交叉淡入淡出动画
+            imageContainer.querySelector('.card-image')?.classList.add('switching');
+            info?.classList.add('switching');
+
+            setTimeout(() => {
+                imageContainer.innerHTML = `<img class="card-image ${this.currentFilter || ''}" src="${photo.src}" alt="${photo.destination.name}">`;
+                document.getElementById('lightboxIndex').textContent = photo.destination.index || String(photo.destIndex + 1).padStart(2, '0');
+                document.getElementById('lightboxLocation').textContent = photo.destination.name;
+                document.getElementById('lightboxDate').textContent = `${photo.destination.date || ''} · ${photo.destination.region || ''}`;
+
+                info?.classList.remove('switching');
+                this.updateExifInfo(photo);
+            }, 250);
+        } else {
+            imageContainer.innerHTML = `<img class="card-image ${this.currentFilter || ''}" src="${photo.src}" alt="${photo.destination.name}">`;
+            document.getElementById('lightboxIndex').textContent = photo.destination.index || String(photo.destIndex + 1).padStart(2, '0');
+            document.getElementById('lightboxLocation').textContent = photo.destination.name;
+            document.getElementById('lightboxDate').textContent = `${photo.destination.date || ''} · ${photo.destination.region || ''}`;
+            this.updateExifInfo(photo);
+        }
     }
 
     navigateLightbox(direction) {
         this.currentLightboxIndex = (this.currentLightboxIndex + direction + this.currentPhotos.length) % this.currentPhotos.length;
-        this.updateLightbox();
+        this.updateLightbox(true);
+    }
+
+    // ===== 滤镜功能 =====
+    initFilters() {
+        this.currentFilter = '';
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const filter = btn.dataset.filter;
+                this.currentFilter = filter === 'none' ? '' : `filter-${filter}`;
+
+                const img = document.querySelector('#lightboxImage .card-image');
+                if (img) {
+                    img.className = `card-image ${this.currentFilter}`;
+                }
+            });
+        });
+    }
+
+    // ===== EXIF 信息 =====
+    initExif() {
+        document.getElementById('exifToggle').addEventListener('click', () => {
+            document.getElementById('exifPanel').classList.toggle('show');
+        });
+    }
+
+    updateExifInfo(photo) {
+        const content = document.getElementById('exifContent');
+        const img = document.querySelector('#lightboxImage .card-image');
+
+        if (!img || !photo.src) {
+            content.innerHTML = '<div class="exif-item"><span class="exif-label">暂无信息</span></div>';
+            return;
+        }
+
+        // 基础信息
+        let html = `
+            <div class="exif-item">
+                <span class="exif-label">文件名</span>
+                <span class="exif-value">${photo.name || '--'}</span>
+            </div>
+            <div class="exif-item">
+                <span class="exif-label">大小</span>
+                <span class="exif-value">${photo.size ? (photo.size / 1024).toFixed(1) + ' KB' : '--'}</span>
+            </div>
+            <div class="exif-item">
+                <span class="exif-label">目的地</span>
+                <span class="exif-value">${photo.destination.name}</span>
+            </div>
+            <div class="exif-item">
+                <span class="exif-label">日期</span>
+                <span class="exif-value">${photo.destination.date || '--'}</span>
+            </div>
+        `;
+
+        // 图片尺寸（加载后获取）
+        if (img.complete && img.naturalWidth) {
+            html += `
+                <div class="exif-item">
+                    <span class="exif-label">尺寸</span>
+                    <span class="exif-value">${img.naturalWidth} × ${img.naturalHeight}</span>
+                </div>
+            `;
+        } else {
+            img.onload = () => {
+                const sizeItem = document.createElement('div');
+                sizeItem.className = 'exif-item';
+                sizeItem.innerHTML = `
+                    <span class="exif-label">尺寸</span>
+                    <span class="exif-value">${img.naturalWidth} × ${img.naturalHeight}</span>
+                `;
+                content.appendChild(sizeItem);
+            };
+        }
+
+        content.innerHTML = html;
+    }
+
+    // ===== 切换动画效果 =====
+    initTransitionAnimations() {
+        // 行程项交错入场
+        this.animateItineraryItems();
+
+        // 照片卡片交错入场
+        this.animatePhotoCards();
+
+        // 工具栏和切换按钮入场
+        setTimeout(() => {
+            document.querySelector('.toolbar')?.classList.add('visible');
+            document.querySelector('.trip-switch-btn')?.classList.add('visible');
+        }, 800);
+
+        // 按钮涟漪效果
+        this.initButtonRipple();
+
+        // 内容就绪动画
+        document.querySelector('.container')?.classList.add('content-ready');
+    }
+
+    animateItineraryItems() {
+        const items = document.querySelectorAll('.itinerary-item');
+        items.forEach((item, index) => {
+            setTimeout(() => {
+                item.classList.add('visible');
+            }, 300 + index * 80);
+        });
+    }
+
+    animatePhotoCards() {
+        const cards = document.querySelectorAll('.photo-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.add('visible');
+            }, 500 + index * 100);
+        });
+    }
+
+    initButtonRipple() {
+        document.querySelectorAll('.enter-btn, .filter-btn, .share-btn, .upload-btn').forEach(btn => {
+            btn.style.position = 'relative';
+            btn.style.overflow = 'hidden';
+            btn.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                ripple.className = 'btn-ripple';
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = e.clientX - rect.left - size / 2 + 'px';
+                ripple.style.top = e.clientY - rect.top - size / 2 + 'px';
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 500);
+            });
+        });
     }
 
     setupEventListeners() {
@@ -930,7 +1247,17 @@ class TravelApp {
         if (trip) {
             this.currentTrip = trip;
             await storageManager.setCurrentTripId(tripId);
-            await this.render();
+
+            // 添加切换过渡动画
+            const container = document.querySelector('.container');
+            container.classList.add('switching');
+
+            setTimeout(async () => {
+                await this.render();
+                container.classList.remove('switching');
+                this.animateItineraryItems();
+                this.animatePhotoCards();
+            }, 300);
         }
     }
 }

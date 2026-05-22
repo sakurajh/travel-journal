@@ -759,6 +759,169 @@ body {
     50% { opacity: 0.8; }
 }
 
+/* ===== 滤镜栏 ===== */
+.filter-bar {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding: 12px 0;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.75rem;
+    font-family: 'Noto Sans SC', sans-serif;
+    letter-spacing: 0.1em;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.filter-btn.active {
+    background: var(--accent-coral);
+    border-color: var(--accent-coral);
+    color: white;
+}
+
+/* CSS 滤镜效果 */
+.filter-vintage {
+    filter: sepia(0.3) contrast(1.1) brightness(0.95) saturate(1.2);
+}
+
+.filter-film {
+    filter: contrast(1.15) saturate(0.9) brightness(1.05) hue-rotate(-5deg);
+}
+
+.filter-bw {
+    filter: grayscale(1) contrast(1.2) brightness(1.05);
+}
+
+.filter-cool {
+    filter: brightness(1.05) contrast(1.05) hue-rotate(15deg) saturate(0.9);
+}
+
+.filter-warm {
+    filter: brightness(1.05) contrast(1.05) hue-rotate(-10deg) saturate(1.1);
+}
+
+.filter-dramatic {
+    filter: contrast(1.3) brightness(0.9) saturate(1.2);
+}
+
+/* ===== 旅行地图 ===== */
+#travelMap {
+    width: 100%;
+    height: 350px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    margin-bottom: 16px;
+}
+
+.map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+.map-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.map-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent-coral);
+}
+
+/* ===== EXIF 信息 ===== */
+.exif-info {
+    position: absolute;
+    bottom: 80px;
+    left: 20px;
+    z-index: 10;
+}
+
+.exif-toggle {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 8px 16px;
+    font-size: 0.75rem;
+    font-family: 'Noto Sans SC', sans-serif;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.exif-toggle:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: var(--accent-coral);
+    color: white;
+}
+
+.exif-panel {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 8px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 200px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.2s;
+}
+
+.exif-panel.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.exif-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.exif-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.exif-label {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.05em;
+}
+
+.exif-value {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-family: 'Space Grotesk', sans-serif;
+}
+
 /* ===== Lightbox ===== */
 .lightbox {
     position: fixed;
@@ -2070,4 +2233,204 @@ body {
 .fullscreen-slider.hide-controls:hover .slider-thumbnails,
 .fullscreen-slider.hide-controls:hover .slider-counter {
     opacity: 1;
+}
+
+/* ===== 切换动画效果 (Transition Animations) ===== */
+
+/* 灯箱图片切换 - 交叉淡入淡出 */
+.lightbox-image .card-image {
+    transition: opacity 0.4s ease, transform 0.4s ease, filter 0.3s ease;
+}
+
+.lightbox-image .card-image.switching {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+/* 灯箱信息文字动画 */
+.lightbox-info {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.lightbox-info.switching {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* 全局淡入动画类 */
+.fade-in {
+    animation: fadeIn 0.6s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 交错淡入动画 */
+.stagger-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.stagger-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 行程项交错动画 */
+.itinerary-item {
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity 0.4s ease, transform 0.4s ease, background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.itinerary-item.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* 照片卡片入场动画增强 */
+.photo-card {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+    transition: flex var(--transition-slow), box-shadow var(--transition-slow), opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.photo-card.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* 旅行切换过渡 */
+.container.switching {
+    animation: tripSwitch 0.6s ease;
+}
+
+@keyframes tripSwitch {
+    0% { opacity: 1; transform: scale(1); }
+    30% { opacity: 0; transform: scale(0.98); }
+    70% { opacity: 0; transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* 标题切换动画 */
+.title-bali.switching,
+.title-year.switching {
+    animation: titleSwitch 0.6s ease;
+}
+
+@keyframes titleSwitch {
+    0% { opacity: 1; transform: translateY(0); }
+    40% { opacity: 0; transform: translateY(-20px); }
+    60% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* 工具栏按钮入场动画 */
+.toolbar {
+    opacity: 0;
+    transform: translateY(-50%) translateX(20px);
+    transition: opacity 0.6s ease 1s, transform 0.6s ease 1s;
+}
+
+.toolbar.visible {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+}
+
+/* 旅行切换按钮入场 */
+.trip-switch-btn {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all var(--transition-fast), opacity 0.5s ease 1.2s, transform 0.5s ease 1.2s;
+}
+
+.trip-switch-btn.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* 图片滤镜切换动画 */
+.card-image {
+    transition: filter 0.4s ease, transform var(--transition-slow), opacity 0.5s ease;
+}
+
+/* 弹窗内按钮交互增强 */
+.modal-box button,
+.modal-box .share-btn {
+    transition: all 0.2s ease;
+}
+
+.modal-box button:active,
+.modal-box .share-btn:active {
+    transform: scale(0.96);
+}
+
+/* 统计卡片入场动画 */
+.stat-card {
+    opacity: 0;
+    transform: translateY(15px);
+    transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.2s ease;
+}
+
+.modal-overlay.active .stat-card {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.modal-overlay.active .stat-card:nth-child(1) { transition-delay: 0.1s; }
+.modal-overlay.active .stat-card:nth-child(2) { transition-delay: 0.2s; }
+.modal-overlay.active .stat-card:nth-child(3) { transition-delay: 0.3s; }
+
+/* 地图标记脉冲动画 */
+.map-marker-pulse {
+    animation: markerPulse 2s ease-in-out infinite;
+}
+
+@keyframes markerPulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.5); opacity: 0.3; }
+}
+
+/* 滚动视差效果 */
+.gallery-scroll {
+    scroll-behavior: smooth;
+}
+
+/* 按钮涟漪增强 */
+.btn-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0);
+    animation: btnRipple 0.5s ease-out;
+    pointer-events: none;
+}
+
+@keyframes btnRipple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* 加载完成淡入 */
+.content-ready .left-panel {
+    animation: slideInLeft 0.8s ease forwards;
+}
+
+.content-ready .right-panel {
+    animation: slideInRight 0.8s ease 0.2s forwards;
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
 }

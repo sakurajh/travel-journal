@@ -106,6 +106,23 @@
                 <span class="lightbox-location" id="lightboxLocation">--</span>
                 <span class="lightbox-date" id="lightboxDate">--</span>
             </div>
+            <!-- 滤镜栏 -->
+            <div class="filter-bar">
+                <button class="filter-btn active" data-filter="none">原图</button>
+                <button class="filter-btn" data-filter="vintage">复古</button>
+                <button class="filter-btn" data-filter="film">胶片</button>
+                <button class="filter-btn" data-filter="bw">黑白</button>
+                <button class="filter-btn" data-filter="cool">冷色</button>
+                <button class="filter-btn" data-filter="warm">暖色</button>
+                <button class="filter-btn" data-filter="dramatic">戏剧</button>
+            </div>
+            <!-- EXIF 信息 -->
+            <div class="exif-info" id="exifInfo">
+                <button class="exif-toggle" id="exifToggle">📷 EXIF</button>
+                <div class="exif-panel" id="exifPanel">
+                    <div class="exif-content" id="exifContent"></div>
+                </div>
+            </div>
         </div>
         <button class="lightbox-prev" id="lightboxPrev">‹</button>
         <button class="lightbox-next" id="lightboxNext">›</button>
@@ -172,6 +189,9 @@
         </button>
         <button class="toolbar-btn" id="btnStats" title="统计">
             📊
+        </button>
+        <button class="toolbar-btn" id="btnMap" title="旅行地图">
+            🗺️
         </button>
         <a href="login.html" class="toolbar-btn" id="btnLogin" title="登录">
             👤
@@ -254,6 +274,20 @@
                     <input type="text" id="shareLink" readonly value="">
                     <button onclick="app.copyShareLink()">复制</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 旅行地图弹窗 -->
+    <div class="modal-overlay" id="mapModal">
+        <div class="modal-box modal-wide">
+            <div class="modal-header">
+                <h3>旅行地图</h3>
+                <button class="modal-close" onclick="document.getElementById('mapModal').classList.remove('active')">×</button>
+            </div>
+            <div class="modal-body">
+                <canvas id="travelMap" width="600" height="400"></canvas>
+                <div class="map-legend" id="mapLegend"></div>
             </div>
         </div>
     </div>
